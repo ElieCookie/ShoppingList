@@ -29,8 +29,10 @@ jobs:
           docker build -t $IMAGE_NAME ./ui
           docker push $IMAGE_NAME
 
-      - name: Push Helm Chart
+      - name: Package and Push Helm Chart
+        env:
+          OWNER_LOWER: ${{ github.repository_owner }}
         run: |
-          helm registry login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
           helm package ./helm-chart
-          helm push *.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+          # Note: We push to the 'charts' namespace in lowercase
+          helm push *.tgz oci://ghcr.io/${OWNER_LOWER,,}
