@@ -11,23 +11,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Login to GHCR
-        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        env:
+          ACTOR_LOWER: ${{ github.actor }}
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${ACTOR_LOWER,,} --password-stdin
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build & Push API
         env:
           REPO_LOWER: ${{ github.repository }}
         run: |
-          IMAGE_NAME=ghcr.io/${REPO_LOWER,,}/api:latest
-          docker build -t $IMAGE_NAME ./api
-          docker push $IMAGE_NAME
+          docker buildx build \
+            --platform linux/amd64 \
+            -t ghcr.io/${REPO_LOWER,,}/api:latest \
+            --push ./api
 
       - name: Build & Push UI
         env:
           REPO_LOWER: ${{ github.repository }}
         run: |
-          IMAGE_NAME=ghcr.io/${REPO_LOWER,,}/ui:latest
-          docker build -t $IMAGE_NAME ./ui
-          docker push $IMAGE_NAME
+          docker buildx build \
+            --platform linux/amd64 \
+            -t ghcr.io/${REPO_LOWER,,}/ui:latest \
+            --push ./ui
 
       - name: Package and Push Helm Chart
         env:
