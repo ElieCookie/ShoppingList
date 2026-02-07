@@ -14,14 +14,20 @@ jobs:
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build & Push API
+        env:
+          REPO_LOWER: ${{ github.repository }}
         run: |
-          docker build -t ghcr.io/${{ github.repository }}/api:latest ./api
-          docker push ghcr.io/${{ github.repository }}/api:latest
+          IMAGE_NAME=ghcr.io/${REPO_LOWER,,}/api:latest
+          docker build -t $IMAGE_NAME ./api
+          docker push $IMAGE_NAME
 
       - name: Build & Push UI
+        env:
+          REPO_LOWER: ${{ github.repository }}
         run: |
-          docker build -t ghcr.io/${{ github.repository }}/ui:latest ./ui
-          docker push ghcr.io/${{ github.repository }}/ui:latest
+          IMAGE_NAME=ghcr.io/${REPO_LOWER,,}/ui:latest
+          docker build -t $IMAGE_NAME ./ui
+          docker push $IMAGE_NAME
 
       - name: Push Helm Chart
         run: |
