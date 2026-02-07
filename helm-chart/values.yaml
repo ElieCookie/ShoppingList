@@ -1,0 +1,51 @@
+# Default values for shop-master.
+# This is a YAML-formatted file.
+
+# Global replica count for the API and WebUI deployments
+replicaCount: 1
+
+# Image configuration for the three main components
+images:
+  api: ghcr.io/ElieCookie/shop-api:latest
+  webui: ghcr.io/ElieCookie/shop-ui:latest
+  mysql: mysql:8.0
+
+# Service configuration
+# Use LoadBalancer for cloud environments, NodePort or ClusterIP for local testing
+serviceType: LoadBalancer
+
+# Environment variables injected into ConfigMaps
+env:
+  user: 'borohov-eleanor'
+  mysqlHost: 'backend-db'
+  apiBaseUrl: 'http://api.local'
+
+# Secrets (To be set via --set secret.rootPassword=... at command line)
+secret:
+  rootPassword: ''
+
+# Configurable title image for the frontend
+titleImage: 'shopping-cart-logo.png'
+
+# Resource limits and requests for the API (Required for HPA to work)
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Horizontal Pod Autoscaler configuration
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+
+# Network Policy toggle
+networkPolicy:
+  enabled: true
+
+ingress:
+  enabled: true
+  host: 'shop.local' # Change this to your domain or minikube IP

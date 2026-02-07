@@ -1,0 +1,28 @@
+services:
+  backend-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: shopping_db
+    ports:
+      - '3306:3306'
+
+  api:
+    build: ./api
+    ports:
+      - '3000:3000'
+    environment:
+      MYSQL_HOST: backend-db
+      MYSQL_ROOT_PASSWORD: password
+    depends_on:
+      - backend-db
+
+  ui:
+    build: ./ui
+    ports:
+      - '8080:80'
+    volumes:
+      # This forces your local nginx.conf into the container
+      - ./ui/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api

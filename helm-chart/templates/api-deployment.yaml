@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shop.fullname" . }}-api
+  labels:
+    {{- include "shop.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shop.selectorLabels" . | nindent 6 }}
+      component: api
+  template:
+    metadata:
+      labels:
+        {{- include "shop.selectorLabels" . | nindent 8 }}
+        component: api
+    spec:
+      initContainers:
+      - name: wait-for-db
+        image: busybox:1.28
+        command: ['sh', '-c', "until nc -zv {{ .Values.env.mysqlHost }} 3306; do echo waiting for db; sleep 2; done;"]
+      containers:
+      - name: api
+        image: {{ .Values.images.api }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "shop.fullname" . }}-config
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "shop.fullname" . }}-secret
+              key: mysql-root-password
+        ports:
+        - containerPort: 3000
+        livenessProbe:
+          httpGet:
+            path: /livez
+            port: 3000
+          initialDelaySeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 3000
+          initialDelaySeconds: 5

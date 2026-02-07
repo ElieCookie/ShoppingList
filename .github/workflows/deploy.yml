@@ -1,0 +1,30 @@
+name: Build and Push OCI
+on:
+  push:
+    branches: [main]
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to GHCR
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build & Push API
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}/api:latest ./api
+          docker push ghcr.io/${{ github.repository }}/api:latest
+
+      - name: Build & Push UI
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}/ui:latest ./ui
+          docker push ghcr.io/${{ github.repository }}/ui:latest
+
+      - name: Push Helm Chart
+        run: |
+          helm registry login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+          helm package ./helm-chart
+          helm push *.tgz oci://ghcr.io/${{ github.repository_owner }}/charts

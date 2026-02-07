@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "shop.fullname" . }}-nginx-config
+data:
+  default.conf: |
+    server {
+        listen 80;
+        
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Dynamic Proxy to the API service
+        location /api/ {
+            # We use port 80 because that is the SERVICE port we just defined
+            proxy_pass http://shop-release-shop-master-api:80/; 
+            
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+    }

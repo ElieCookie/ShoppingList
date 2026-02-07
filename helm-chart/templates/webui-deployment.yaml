@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shop.fullname" . }}-webui
+  labels:
+    {{- include "shop.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shop.selectorLabels" . | nindent 6 }}
+      component: ui
+  template:
+    metadata:
+      labels:
+        {{- include "shop.selectorLabels" . | nindent 8 }}
+        component: ui
+    spec:
+      containers:
+      - name: ui
+        image: {{ .Values.images.webui }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        # This is where we inject the Nginx config from the ConfigMap
+        volumeMounts:
+        - name: nginx-config-volume
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+        # Readiness/Liveness for the UI
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      
+      # Define the volume that points to the ConfigMap
+      volumes:
+      - name: nginx-config-volume
+        configMap:
+          name: {{ include "shop.fullname" . }}-nginx-config

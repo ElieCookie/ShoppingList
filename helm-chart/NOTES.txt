@@ -1,0 +1,14 @@
+The Shop-Master application is being deployed!
+
+1. Monitor the deployment:
+   kubectl get pods --watch
+
+2. Access the UI:
+{{- if eq .Values.serviceType "LoadBalancer" }}
+   Get the IP: kubectl get svc {{ include "shop.fullname" . }}-webui
+{{- else }}
+   kubectl port-forward svc/{{ include "shop.fullname" . }}-webui 8080:80
+   Open: http://localhost:8080
+{{- end }}
+
+3. App User: {{ .Values.env.user }}
