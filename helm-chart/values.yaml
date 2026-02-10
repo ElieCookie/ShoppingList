@@ -6,8 +6,8 @@ replicaCount: 1
 
 # Image configuration for the three main components
 images:
-  api: ghcr.io/ElieCookie/shop-api:latest
-  webui: ghcr.io/ElieCookie/shop-ui:latest
+  api: ghcr.io/eliecookie/shoppinglist/api:latest
+  webui: ghcr.io/eliecookie/shoppinglist/ui:latest
   mysql: mysql:8.0
 
 # Service configuration

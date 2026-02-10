@@ -10,29 +10,37 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+
+      # 1. Setup QEMU (Essential for building the ARM64 slice on an x64 runner)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # 2. Setup Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to GHCR
         env:
           ACTOR_LOWER: ${{ github.actor }}
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${ACTOR_LOWER,,} --password-stdin
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
+      # 3. Build & Push API (Multi-Arch)
       - name: Build & Push API
         env:
           REPO_LOWER: ${{ github.repository }}
         run: |
           docker buildx build \
-            --platform linux/amd64 \
+            --platform linux/amd64,linux/arm64 \
             -t ghcr.io/${REPO_LOWER,,}/api:latest \
             --push ./api
 
+      # 4. Build & Push UI (Multi-Arch)
       - name: Build & Push UI
         env:
           REPO_LOWER: ${{ github.repository }}
         run: |
           docker buildx build \
-            --platform linux/amd64 \
+            --platform linux/amd64,linux/arm64 \
             -t ghcr.io/${REPO_LOWER,,}/ui:latest \
             --push ./ui
 
@@ -41,5 +49,4 @@ jobs:
           OWNER_LOWER: ${{ github.repository_owner }}
         run: |
           helm package ./helm-chart
-          # Note: We push to the 'charts' namespace in lowercase
           helm push *.tgz oci://ghcr.io/${OWNER_LOWER,,}
