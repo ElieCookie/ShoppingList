@@ -1,61 +1,19 @@
-## Local Development (Docker Only)
-### 1. Build the images
-`docker build -t shop-api:v1 ./api`
-`docker build -t shop-ui:v1 ./ui`
+## 🚀 How to Run this Project
+#### Install the Chart:
+Bash
+`helm install shop-release oci://ghcr.io/eliecookie/shop-master --version 0.1.0 --set secret.rootPassword="admin"`
 
-### 2. Run the Database
-`docker run -d --name mysql-db -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 mysql:8`
-
-### 3. Run the API (connecting to the DB)
-`docker run -d --name shop-api -p 3000:3000 -e DB_HOST=host.docker.internal shop-api:v1`
-
-### 4. Run the UI
-`docker run -d --name shop-ui -p 8080:80 shop-ui:v1`
-
-## Kubernetes Local Deployment (Minikube)
-### 1. Start Environment
-`minikube start`
+#### Enable Ingress & Network:
+Bash
 `minikube addons enable ingress`
-`eval $(minikube docker-env)`
-
-### 2. Build images directly into Minikube
-`docker build -t shop-api:v1 ./api
-docker build -t shop-ui:v1 ./ui`
-
-### 3. Install via Helm (Local Folder)
-`helm install shop-release ./helm-chart \
- --set images.api=shop-api:v1 \
- --set images.webui=shop-ui:v1 \
- --set secret.rootPassword="password" \
- --set ingress.enabled=true \
- --set ingress.host="shop.local"`
-
-### 4. Bridge to Browser
-#### Keep this running in a separate tab!
 `minikube tunnel`
+Configure DNS (Local): Add 127.0.0.1 shop.local to your `/etc/hosts` file.
 
-## Production: Hosting Helm on GHCR
+#### Access: Open http://shop.local in your browser. It will show you the main page. 
+To access the livez and readyz please add the path: /api/livez or /api/readyz.
 
-### 1. Package the chart
-#### This creates a file like shop-master-0.1.0.tgz
+##### If you are on Linux, you may need to use $(minikube ip) instead of 127.0.0.1 in your hosts file.
 
-`helm package ./helm-chart`
-
-### 2. Login to GitHub Container Registry
-#### Use a Classic PAT with 'write:packages' scope
-
-`export CR_PAT=YOUR_PERSONAL_ACCESS_TOKEN`
-`echo $CR_PAT | helm registry login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin`
-
-### 3. Push the chart
-
-`helm push shop-master-0.1.0.tgz oci://ghcr.io/YOUR_GITHUB_USERNAME/charts`
-
-### 4. Install from the Cloud
-
-`helm install my-release oci://ghcr.io/YOUR_GITHUB_USERNAME/charts/shop-master \
- --version 0.1.0 \
- --set secret.rootPassword="password"`
 
 ## API Readme
 ### Shopping List API
@@ -64,7 +22,101 @@ A NestJS backend providing a RESTful API for a shopping list application.
 ### Tech Stack
 - NestJS
 - TypeORM / MySQL
-- Swagger (available at /api/docs)
+
+### Endpoints
+
+- GET `/items` (list all items)
+- GET `/items/{id}` (fetch one item)
+- POST `/items` (create; body: `{ "task": "..." }`, status defaults to "Todo", id generated as MAX(id)+1 within a transaction)
+- PUT/PATCH `/items/{id}` (update task and/or status; valid statuses: "Todo", "In Progress", "Complete"; response shows updated_fields or "no changes")
+- DELETE `/items/{id}` (remove item)
+- GET `/livez`, GET `/readyz` (health probes)
+
+### API Usage Examples with curl
+Assuming service is running locally on port 3000.
+
+#### List all items
+```bash
+curl http://localhost:3000/items
+```
+
+#### Get a specific item
+```bash
+curl http://localhost:3000/items/1
+```
+
+#### Create a new item
+```bash
+curl -X POST http://localhost:3000/items \
+  -H "Content-Type: application/json" \
+  -d '{"task": "Buy groceries"}'
+```
+
+#### Update an item (PATCH)
+```bash
+# Update only status
+curl -X PATCH http://localhost:3000/items/1 \
+  -H "Content-Type: application/json" \
+  -d '{"status": "In Progress"}'
+
+# Update only task
+curl -X PATCH http://localhost:3000/items/1 \
+  -H "Content-Type: application/json" \
+  -d '{"task": "Buy organic groceries"}'
+
+# Update both task and status
+curl -X PATCH http://localhost:3000/items/1 \
+  -H "Content-Type: application/json" \
+  -d '{"task": "Buy groceries and cook", "status": "Complete"}'
+```
+
+#### Delete an item
+```bash
+curl -X DELETE http://localhost:3000/items/1
+```
+
+#### Health checks
+```bash
+# Liveness probe
+curl http://localhost:3000/livez
+
+# Readiness probe
+curl http://localhost:3000/readyz
+```
+
+### Running the API
+#### Run locally
+
+```bash
+cd api
+npm install
+npm run start
+```
+
+Set environment variables as needed for your database configuration.
+
+#### Build and run the NestJS API as a container
+
+```bash
+cd api
+docker build -t shopping-list-api .
+docker run --rm -p 3000:3000 \
+  -e DATABASE_URL=<database-url> \
+  shopping-list-api
+```
+
+### Item Schema
+
+Each item has the following structure:
+
+| Field | Type | Description | Default |
+|-------|------|-------------|---------|
+| `id` | number | Unique identifier | Auto-generated |
+| `task` | string | Task description | Required |
+| `status` | string | Item status | `Todo` |
+
+Valid status values: `Todo`, `In Progress`, `Complete`
+
 
 ### Environment Variables
 
@@ -82,17 +134,5 @@ A Vue.js application that serves as the user interface.
 ### Internal Proxy
 Nginx is configured to proxy requests from `/api/*` to the backend service at port 80.
 
-## 🚀 How to Run this Project
-#### Install the Chart:
-Bash
-`helm install shop-release oci://ghcr.io/eliecookie/shop-master --version 0.1.0 --set secret.rootPassword="admin"`
 
-#### Enable Ingress & Network:
-Bash
-`minikube addons enable ingress`
-`minikube tunnel`
-Configure DNS (Local): Add 127.0.0.1 shop.local to your `/etc/hosts` file.
 
-#### Access: Open http://shop.local in your browser.
-
-##### If you are on Linux, you may need to use $(minikube ip) instead of 127.0.0.1 in your hosts file.
