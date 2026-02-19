@@ -1,12 +1,16 @@
 ## 🚀 How to Run this Project
 #### Install the Chart:
-Bash
-`helm install shop-release oci://ghcr.io/eliecookie/shop-master --version 0.1.0 --set secret.rootPassword="admin"`
+```bash
+helm install shop-release oci://ghcr.io/eliecookie/shop-master --version 0.1.0 --set secret.rootPassword="admin"
+```
 
 #### Enable Ingress & Network:
-Bash
-`minikube addons enable ingress`
-`minikube tunnel`
+```bash
+minikube addons enable ingress
+```
+```bash
+minikube tunnel
+```
 Configure DNS (Local): Add 127.0.0.1 shop.local to your `/etc/hosts` file.
 
 #### Access: Open http://shop.local in your browser. It will show you the main page. 
